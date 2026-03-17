@@ -1,0 +1,26 @@
+{
+  "name": "@nullclaw/channel-baileys",
+  "version": "0.1.0",
+  "description": "External nullclaw channel plugin for WhatsApp via Baileys",
+  "type": "module",
+  "bin": {
+    "nullclaw-channel-baileys": "./bin/nullclaw-channel-baileys.mjs"
+  },
+  "scripts": {
+    "lint": "node --check ./bin/nullclaw-channel-baileys.mjs",
+    "test": "npm run lint"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nullclaw/nullclaw-channel-baileys.git"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@whiskeysockets/baileys": "7.0.0-rc.9",
+    "qrcode-terminal": "0.12.0"
+  }
+}
+

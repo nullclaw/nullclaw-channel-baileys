@@ -25,6 +25,29 @@ Current limits:
 - no streaming chunks
 - no media upload pipeline yet
 
+## Quick Start
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Run the plugin directly for local testing:
+
+```bash
+node ./bin/nullclaw-channel-baileys.mjs
+```
+
+3. Or link it globally:
+
+```bash
+npm link
+nullclaw-channel-baileys
+```
+
+4. Wire it into `nullclaw` via `channels.external`.
+
 ## Install
 
 ```bash
@@ -81,6 +104,31 @@ Supported plugin config keys:
 The host passes a persistent `state_dir` in `start.params.runtime.state_dir`.
 This plugin stores Baileys auth files under `state_dir/auth`.
 
+Complete pair-code example:
+
+```json
+{
+  "channels": {
+    "external": {
+      "accounts": {
+        "wa-main": {
+          "runtime_name": "whatsapp",
+          "transport": {
+            "command": "/opt/nullclaw/plugins/nullclaw-channel-baileys",
+            "timeout_ms": 15000
+          },
+          "config": {
+            "auth_mode": "pair_code",
+            "pair_phone_number": "551199999999",
+            "display_name": "Chrome (Linux)"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
 ## Authorization Flows
 
 ### QR flow
@@ -91,6 +139,18 @@ This plugin stores Baileys auth files under `state_dir/auth`.
 4. Open WhatsApp on the phone and link a new device.
 5. Once the websocket is open, `health` begins returning `logged_in=true`.
 
+Practical operator flow:
+
+```bash
+nullclaw channel start whatsapp 2> /tmp/nullclaw-baileys.log
+```
+
+Then read the QR code from stderr output:
+
+```bash
+tail -f /tmp/nullclaw-baileys.log
+```
+
 ### Pair-code flow
 
 1. Configure:
@@ -100,6 +160,45 @@ This plugin stores Baileys auth files under `state_dir/auth`.
 3. The plugin requests a pairing code from Baileys and prints it to stderr.
 4. Enter the code in WhatsApp linked-device flow on the phone.
 5. When linking succeeds, `health` reports `logged_in=true`.
+
+## Full Operator CJM
+
+### First login
+
+1. Add the external account config to `nullclaw`.
+2. Start the channel with `nullclaw channel start whatsapp`.
+3. If `auth_mode=qr`, scan the QR printed to stderr.
+4. If `auth_mode=pair_code`, copy the printed pairing code into WhatsApp.
+5. Wait for the linked device to complete.
+6. Send a test WhatsApp message to the linked account.
+7. Verify inbound delivery inside `nullclaw`.
+8. Trigger one outbound reply and verify it reaches WhatsApp.
+
+### Restart
+
+1. Stop `nullclaw`.
+2. Start `nullclaw` again.
+3. The plugin reloads auth files from `state_dir/auth`.
+4. If the WhatsApp session is still valid, no QR or pair code is needed.
+
+### Re-link after logout
+
+If WhatsApp logs the device out:
+
+1. Delete the stored auth directory under `state_dir/auth` if you want a clean relink.
+2. Start the channel again.
+3. Repeat the QR or pair-code flow.
+
+## Troubleshooting
+
+- No QR shown:
+  make sure you started the channel and are looking at stderr, not stdout.
+- Pair code never appears:
+  verify `auth_mode=pair_code` and `pair_phone_number` uses international digits only.
+- Repeated relogin requests:
+  check that `state_dir` is persistent and writable by the `nullclaw` user.
+- Channel looks started but nothing is received:
+  send a direct text message first; media-only traffic is ignored by the current baseline.
 
 ## Protocol Notes
 
@@ -125,6 +224,13 @@ message key as base64url JSON so later operations can target the same message.
 
 That encoded key is what `edit_message`, `delete_message`, `set_reaction`, and
 `mark_read` expect as `message.message_id`.
+
+## Security Notes
+
+- This plugin does not expose an HTTP API by itself.
+- WhatsApp auth material is stored under host-provided `state_dir`.
+- Anyone who can read `state_dir/auth` can reuse the linked device session.
+- Do not put this plugin on a multi-user host without filesystem hygiene.
 
 ## Validation
 

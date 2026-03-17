@@ -232,6 +232,19 @@ That encoded key is what `edit_message`, `delete_message`, `set_reaction`, and
 - Anyone who can read `state_dir/auth` can reuse the linked device session.
 - Do not put this plugin on a multi-user host without filesystem hygiene.
 
+## Production
+
+For deployment and hardening notes, see:
+
+- [docs/production-hardening.md](./docs/production-hardening.md)
+
+The short version:
+
+- run `nullclaw` under a dedicated service user
+- keep this plugin on the same host as `nullclaw`
+- prefer `pair_code` on headless hosts
+- persist and protect `state_dir/auth`
+
 ## Validation
 
 ```bash
